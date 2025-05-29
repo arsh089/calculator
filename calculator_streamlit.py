@@ -1,135 +1,154 @@
 import streamlit as st
 import math
 
-# Set page configuration
-st.set_page_config(
-    page_title="Modern Calculator",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
-
-# Custom CSS styling
-st.markdown("""
-<style>
-    .calculator-container {
-        max-width: 400px;
-        margin: 0 auto;
-        padding: 20px;
-        background: linear-gradient(145deg, #f0f0f0, #ffffff);
-        border-radius: 15px;
-        box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
-    }
-    .stButton > button {
-        width: 100%;
-        height: 60px;
-        background: linear-gradient(145deg, #f0f0f0, #ffffff);
-        border: none;
-        border-radius: 10px;
-        color: #333;
-        font-size: 20px;
-        font-weight: bold;
-        margin: 5px 0;
-        transition: all 0.3s ease;
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .calculator-display {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        text-align: right;
-        font-size: 36px;
-        font-family: 'Arial', sans-serif;
-        box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .title {
-        text-align: center;
-        color: #333;
-        font-family: 'Arial', sans-serif;
-        margin-bottom: 30px;
-    }
-</style>
-""", unsafe_allow_html=True)
+def calculate(expression):
+    try:
+        # Replace ^ with ** for power operation
+        expression = expression.replace('^', '**')
+        result = eval(expression)
+        # Format number to remove trailing zeros after decimal
+        if isinstance(result, float):
+            str_num = f"{result:.10f}".rstrip('0')
+            if str_num.endswith('.'):
+                str_num = str_num[:-1]
+            return str_num
+        return str(result)
+    except ZeroDivisionError:
+        return "Cannot divide by zero"
+    except Exception as e:
+        return "Error"
 
 def main():
+    st.set_page_config(
+        page_title="Modern Calculator",
+        layout="centered",
+        initial_sidebar_state="collapsed",
+    )
+
+    # Custom CSS for styling
+    st.markdown("""
+        <style>
+        .stButton > button {
+            width: 100%;
+            height: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .calculator-display {
+            background-color: #2D2D2D;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            text-align: right;
+            font-family: monospace;
+            font-size: 24px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Initialize session state if not exists
+    if 'expression' not in st.session_state:
+        st.session_state.expression = ""
+    if 'result' not in st.session_state:
+        st.session_state.result = "0"
+
+    # Calculator title
     st.title("Modern Calculator")
-    
-    # Initialize session state for calculator display
-    if "display" not in st.session_state:
-        st.session_state.display = "0"
-    
-    # Display the current value
-    display = st.text_input("", value=st.session_state.display, key="display_input")
-    
-    # Create button columns
+
+    # Display expression and result
+    st.markdown(f'<div class="calculator-display">{st.session_state.expression}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="calculator-display">{st.session_state.result}</div>', unsafe_allow_html=True)
+
+    # Calculator buttons layout
     col1, col2, col3, col4 = st.columns(4)
-    
+
     # Row 1
-    if col1.button("7"):
-        update_display("7")
-    if col2.button("8"):
-        update_display("8")
-    if col3.button("9"):
-        update_display("9")
-    if col4.button("/"):
-        update_display("/")
-    
-    # Row 2
-    if col1.button("4"):
-        update_display("4")
-    if col2.button("5"):
-        update_display("5")
-    if col3.button("6"):
-        update_display("6")
-    if col4.button("*"):
-        update_display("*")
-    
-    # Row 3
-    if col1.button("1"):
-        update_display("1")
-    if col2.button("2"):
-        update_display("2")
-    if col3.button("3"):
-        update_display("3")
-    if col4.button("-"):
-        update_display("-")
-    
-    # Row 4
-    if col1.button("0"):
-        update_display("0")
-    if col2.button("."):
-        update_display(".")
-    if col3.button("="):
-        calculate()
-    if col4.button("+"):
-        update_display("+")
-    
-    # Row 5
     if col1.button("C"):
-        clear_display()
+        st.session_state.expression = ""
+        st.session_state.result = "0"
+        st.rerun()
     if col2.button("←"):
-        backspace()
+        st.session_state.expression = st.session_state.expression[:-1]
+        if st.session_state.expression:
+            st.session_state.result = calculate(st.session_state.expression)
+        else:
+            st.session_state.result = "0"
+        st.rerun()
+    if col3.button("^"):
+        st.session_state.expression += "^"
+        st.rerun()
+    if col4.button("/"):
+        st.session_state.expression += "/"
+        st.rerun()
 
-def update_display(value):
-    if st.session_state.display == "0":
-        st.session_state.display = value
-    else:
-        st.session_state.display += value
+    # Row 2
+    if col1.button("7"):
+        st.session_state.expression += "7"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col2.button("8"):
+        st.session_state.expression += "8"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col3.button("9"):
+        st.session_state.expression += "9"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col4.button("*"):
+        st.session_state.expression += "*"
+        st.rerun()
 
-def clear_display():
-    st.session_state.display = "0"
+    # Row 3
+    if col1.button("4"):
+        st.session_state.expression += "4"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col2.button("5"):
+        st.session_state.expression += "5"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col3.button("6"):
+        st.session_state.expression += "6"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col4.button("-"):
+        st.session_state.expression += "-"
+        st.rerun()
 
-def backspace():
-    st.session_state.display = st.session_state.display[:-1] if len(st.session_state.display) > 1 else "0"
+    # Row 4
+    if col1.button("1"):
+        st.session_state.expression += "1"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col2.button("2"):
+        st.session_state.expression += "2"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col3.button("3"):
+        st.session_state.expression += "3"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col4.button("+"):
+        st.session_state.expression += "+"
+        st.rerun()
 
-def calculate():
-    try:
-        st.session_state.display = str(eval(st.session_state.display))
-    except:
-        st.session_state.display = "Error"
+    # Row 5
+    if col1.button("0"):
+        st.session_state.expression += "0"
+        st.session_state.result = calculate(st.session_state.expression)
+        st.rerun()
+    if col2.button("."):
+        st.session_state.expression += "."
+        st.rerun()
+    # Combine columns 3 and 4 for the equals button
+    col3_4 = st.columns([1, 1])[0]
+    if col3_4.button("=", use_container_width=True):
+        if st.session_state.expression:
+            st.session_state.result = calculate(st.session_state.expression)
+            st.session_state.expression = ""
+            st.rerun()
 
 if __name__ == "__main__":
     main() 

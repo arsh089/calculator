@@ -7,19 +7,50 @@ class Calculator:
     def __init__(self, root):
         self.root = root
         self.root.title("Modern Calculator")
-        self.root.geometry("400x600")  # Increased initial size
-        self.root.minsize(350, 500)    # Set minimum size
+        
+        # Get screen dimensions
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+        
+        # Calculate dimensions based on screen size and orientation
+        is_portrait = screen_height > screen_width
+        if is_portrait:
+            width = min(400, int(screen_width * 0.95))  # 95% of screen width for portrait
+            height = min(800, int(screen_height * 0.7))  # 70% of screen height
+        else:
+            width = min(500, int(screen_width * 0.4))  # 40% of screen width for landscape
+            height = min(600, int(screen_height * 0.8))  # 80% of screen height
+        
+        # Calculate position for center of screen
+        x = (screen_width - width) // 2
+        y = (screen_height - height) // 2
+        
+        # Set window size and position
+        self.root.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # Set minimum sizes based on orientation
+        if is_portrait:
+            min_width = min(300, int(screen_width * 0.8))
+            min_height = min(450, int(screen_height * 0.5))
+        else:
+            min_width = min(400, int(screen_width * 0.3))
+            min_height = min(300, int(screen_height * 0.4))
+            
+        self.root.minsize(min_width, min_height)
+        
+        # Make window resizable
+        self.root.resizable(True, True)
         self.root.configure(bg="#1E1E1E")
         
         # Make sure window is visible and on top initially
-        self.root.attributes('-topmost', True)  # Make window stay on top initially
+        self.root.attributes('-topmost', True)
         self.root.update()
-        self.root.attributes('-topmost', False)  # Disable stay on top after window is shown
+        self.root.attributes('-topmost', False)
         
         # Set calculator icon (using ⌘ symbol as a simple calculator icon)
         self.root.iconbitmap() if hasattr(self.root, 'iconbitmap') else None
         
-        # Make sure the calculator window is responsive
+        # Make the calculator window responsive
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         
@@ -113,12 +144,16 @@ class Calculator:
         self.bind_keyboard_events()
     
     def bind_keyboard_events(self):
-        """Bind keyboard events to calculator functions"""
+        """Bind keyboard events and touch events to calculator functions"""
         self.root.bind('<Key>', self.handle_keypress)
         self.root.bind('<Return>', lambda e: self.button_click('='))
         self.root.bind('<BackSpace>', lambda e: self.button_click('←'))
         self.root.bind('<Delete>', lambda e: self.button_click('C'))
         self.root.bind('<Escape>', lambda e: self.button_click('C'))
+        
+        # Add touch event bindings
+        self.root.bind('<Button-1>', self.handle_touch)
+        self.root.bind('<ButtonRelease-1>', self.handle_touch_release)
     
     def handle_keypress(self, event):
         """Handle keyboard input"""
@@ -130,6 +165,19 @@ class Calculator:
             if key in self.buttons_dict:
                 self.flash_button(self.buttons_dict[key])
     
+    def handle_touch(self, event):
+        """Handle touch/click events"""
+        widget = event.widget
+        if isinstance(widget, ttk.Button):
+            self.flash_button(widget)
+    
+    def handle_touch_release(self, event):
+        """Handle touch/click release events"""
+        widget = event.widget
+        if isinstance(widget, ttk.Button):
+            text = widget.cget('text')
+            self.button_click(text)
+    
     def flash_button(self, button):
         """Create a visual feedback when a button is pressed"""
         current_style = button.cget('style')
@@ -140,33 +188,45 @@ class Calculator:
         style = ttk.Style()
         style.theme_use('clam')
         
+        # Calculate dynamic font sizes based on screen resolution and device type
+        screen_height = self.root.winfo_screenheight()
+        screen_width = self.root.winfo_screenwidth()
+        
+        # Detect if likely touch device based on resolution and ratio
+        is_touch_device = screen_height / screen_width < 2  # Common mobile aspect ratio
+        
+        # Adjust base font size for touch devices
+        if is_touch_device:
+            base_font_size = max(14, min(18, int(screen_height / 80)))
+            button_padding = int(base_font_size * 1.2)  # Larger padding for touch
+        else:
+            base_font_size = max(10, min(14, int(screen_height / 100)))
+            button_padding = int(base_font_size * 0.8)
+            
+        large_font_size = base_font_size + 4
+        
         # Frame styles
         style.configure("Display.TFrame", background="#1E1E1E")
         style.configure("Main.TFrame", background="#1E1E1E")
         
-        # Entry styles
+        # Entry styles with dynamic font sizes
         style.configure("Display.TEntry", 
                        fieldbackground="#2D2D2D",
                        foreground="#FFFFFF",
                        insertcolor="#FFFFFF",
                        borderwidth=0,
-                       relief="flat")
+                       relief="flat",
+                       font=('Helvetica', large_font_size + 10))
         
         style.configure("Expression.TEntry",
                        fieldbackground="#2D2D2D",
                        foreground="#A0A0A0",
                        insertcolor="#FFFFFF",
                        borderwidth=0,
-                       relief="flat")
+                       relief="flat",
+                       font=('Helvetica', large_font_size))
         
-        # Button styles - using element creation
-        for btn_style in ['Num.TButton', 'Operator.TButton', 'Clear.TButton', 'Equal.TButton']:
-            style.layout(btn_style,
-                        [('Button.padding', {'children':
-                            [('Button.label', {'sticky': 'nswe'})],
-                            'sticky': 'nswe'})])
-
-        # Configure button styles with modern colors and effects
+        # Enhanced button styles for better touch interaction
         button_settings = {
             'Num.TButton': ('#FFFFFF', '#424242', '#525252'),
             'Operator.TButton': ('#FFFFFF', '#0066cc', '#0077ee'),
@@ -175,21 +235,25 @@ class Calculator:
         }
         
         for btn_style, (fg, bg, active_bg) in button_settings.items():
+            style.layout(btn_style,
+                        [('Button.padding', {'children':
+                            [('Button.label', {'sticky': 'nswe'})],
+                            'sticky': 'nswe'})])
+            
             style.configure(btn_style,
                           foreground=fg,
                           background=bg,
-                          font=('Helvetica', 14, 'bold'),
-                          padding=12,
+                          font=('Helvetica', base_font_size, 'bold'),
+                          padding=button_padding,
                           relief='flat',
                           borderwidth=0)
             
-            # Add hover and pressed effects
+            # Enhanced visual feedback for touch devices
             style.map(btn_style,
                      foreground=[('pressed', '#FFFFFF'), ('active', '#FFFFFF')],
                      background=[('pressed', active_bg), ('active', active_bg)],
                      relief=[('pressed', 'sunken'), ('active', 'flat')])
             
-            # Add active state configuration
             style.configure(f"{btn_style}.Active",
                           background=active_bg,
                           relief="sunken")
