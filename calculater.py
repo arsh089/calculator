@@ -188,52 +188,78 @@ class Calculator:
         style = ttk.Style()
         style.theme_use('clam')
         
+        # Color scheme
+        colors = {
+            'background': '#1A1A2E',  # Dark blue background
+            'display_bg': '#16213E',  # Slightly lighter blue for display
+            'text_primary': '#FFFFFF',  # White text
+            'text_secondary': '#A7A7A7',  # Light gray text
+            'accent_blue': '#0F3460',    # Deep blue for operators
+            'accent_blue_hover': '#1A4B8C',
+            'number_btn': '#2A2A4A',     # Dark purple for number buttons
+            'number_btn_hover': '#3A3A5A',
+            'clear_btn': '#950101',      # Red for clear buttons
+            'clear_btn_hover': '#BC1823',
+            'equal_btn': '#1B5E20',      # Green for equals
+            'equal_btn_hover': '#2E7D32',
+            'border_color': '#E94560'     # Accent color for borders
+        }
+        
         # Calculate dynamic font sizes based on screen resolution and device type
         screen_height = self.root.winfo_screenheight()
         screen_width = self.root.winfo_screenwidth()
         
         # Detect if likely touch device based on resolution and ratio
-        is_touch_device = screen_height / screen_width < 2  # Common mobile aspect ratio
+        is_touch_device = screen_height / screen_width < 2
         
         # Adjust base font size for touch devices
         if is_touch_device:
             base_font_size = max(14, min(18, int(screen_height / 80)))
-            button_padding = int(base_font_size * 1.2)  # Larger padding for touch
+            button_padding = int(base_font_size * 1.2)
         else:
             base_font_size = max(10, min(14, int(screen_height / 100)))
             button_padding = int(base_font_size * 0.8)
             
         large_font_size = base_font_size + 4
         
-        # Frame styles
-        style.configure("Display.TFrame", background="#1E1E1E")
-        style.configure("Main.TFrame", background="#1E1E1E")
+        # Configure root background
+        self.root.configure(bg=colors['background'])
         
-        # Entry styles with dynamic font sizes
-        style.configure("Display.TEntry", 
-                       fieldbackground="#2D2D2D",
-                       foreground="#FFFFFF",
-                       insertcolor="#FFFFFF",
+        # Frame styles with borders
+        style.configure("Display.TFrame",
+                       background=colors['display_bg'],
+                       borderwidth=2,
+                       relief="solid")
+        
+        style.configure("Main.TFrame",
+                       background=colors['background'])
+        
+        # Entry styles with enhanced visibility
+        style.configure("Display.TEntry",
+                       fieldbackground=colors['display_bg'],
+                       foreground=colors['text_primary'],
+                       insertcolor=colors['text_primary'],
                        borderwidth=0,
                        relief="flat",
-                       font=('Helvetica', large_font_size + 10))
+                       font=('Helvetica', large_font_size + 10, 'bold'))
         
         style.configure("Expression.TEntry",
-                       fieldbackground="#2D2D2D",
-                       foreground="#A0A0A0",
-                       insertcolor="#FFFFFF",
+                       fieldbackground=colors['display_bg'],
+                       foreground=colors['text_secondary'],
+                       insertcolor=colors['text_primary'],
                        borderwidth=0,
                        relief="flat",
                        font=('Helvetica', large_font_size))
         
-        # Enhanced button styles for better touch interaction
+        # Enhanced button styles with new color scheme
         button_settings = {
-            'Num.TButton': ('#FFFFFF', '#424242', '#525252'),
-            'Operator.TButton': ('#FFFFFF', '#0066cc', '#0077ee'),
-            'Clear.TButton': ('#FFFFFF', '#cc3300', '#dd4411'),
-            'Equal.TButton': ('#FFFFFF', '#00994c', '#00aa5c')
+            'Num.TButton': (colors['text_primary'], colors['number_btn'], colors['number_btn_hover']),
+            'Operator.TButton': (colors['text_primary'], colors['accent_blue'], colors['accent_blue_hover']),
+            'Clear.TButton': (colors['text_primary'], colors['clear_btn'], colors['clear_btn_hover']),
+            'Equal.TButton': (colors['text_primary'], colors['equal_btn'], colors['equal_btn_hover'])
         }
         
+        # Configure button styles with enhanced visual feedback
         for btn_style, (fg, bg, active_bg) in button_settings.items():
             style.layout(btn_style,
                         [('Button.padding', {'children':
@@ -246,13 +272,18 @@ class Calculator:
                           font=('Helvetica', base_font_size, 'bold'),
                           padding=button_padding,
                           relief='flat',
-                          borderwidth=0)
+                          borderwidth=2,
+                          highlightthickness=1,
+                          highlightcolor=colors['border_color'])
             
-            # Enhanced visual feedback for touch devices
+            # Enhanced visual feedback for interactions
             style.map(btn_style,
-                     foreground=[('pressed', '#FFFFFF'), ('active', '#FFFFFF')],
-                     background=[('pressed', active_bg), ('active', active_bg)],
-                     relief=[('pressed', 'sunken'), ('active', 'flat')])
+                     foreground=[('pressed', colors['text_primary']), 
+                                ('active', colors['text_primary'])],
+                     background=[('pressed', active_bg), 
+                                ('active', active_bg)],
+                     relief=[('pressed', 'sunken'), 
+                            ('active', 'flat')])
             
             style.configure(f"{btn_style}.Active",
                           background=active_bg,
